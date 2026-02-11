@@ -10,6 +10,10 @@ from google.oauth2 import service_account
 
 from gee_functions import compare_dw_abudhabi_years
 
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+
 client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 
@@ -44,6 +48,20 @@ ee.Initialize(credentials, project="gee-chatbot1")
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],       # allow all websites (fine for dev)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Serve frontend (index.html) at /app
+app.mount(
+    "/app",
+    StaticFiles(directory="frontend", html=True),
+    name="frontend",
+)
 
 class CompareRequest(BaseModel):
     year_a: int
