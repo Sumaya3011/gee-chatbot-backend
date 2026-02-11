@@ -1,6 +1,7 @@
 # main.py
 import os
 import json
+from openai import OpenAI
 
 import ee
 from fastapi import FastAPI
@@ -8,6 +9,9 @@ from pydantic import BaseModel
 from google.oauth2 import service_account
 
 from gee_functions import compare_dw_abudhabi_years
+
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
 
 # -------- Earth Engine initialization --------
 
@@ -70,4 +74,78 @@ def compare_abudhabi_dw(req: CompareRequest):
     return {
         "message": text,
         "data": data,
+    }
+
+class ChatRequest(BaseModel):
+    message: str
+
+
+@app.post("/chat")
+def chat(req: ChatRequest):
+
+    user_message = req.message
+
+    # Define tools available to the model
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "compare_dw_abudhabi_years",
+                "description": "Compare Dynamic World land cover between two years for Abu Dhabi city block.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "year_a": {
+                            "type": "integer",
+                            "description": "First year between 2020 and 2024"
+                        },
+                        "year_b": {
+                            "type": "integer",
+                            "description": "Second year between 2020 and 2024"
+                        }
+                    },
+                    "required": ["year_a", "year_b"]
+                }
+            }
+        }
+    ]
+
+    # Call OpenAI
+    completion = client.chat.completions.create(
+        model="gpt-4.1-mini",
+        messages=[
+            {"role": "system", "content": "You are a GIS assistant. Use tools when needed."},
+            {"role": "user", "content": user_message}
+        ],
+        tools=tools
+    )
+
+    message = completion.choices[0].message
+
+    # If the model decides to call a function
+    if message.tool_calls:
+        tool_call = message.tool_calls[0]
+        function_name = tool_call.function.name
+        arguments = json.loads(tool_call.function.arguments)
+
+        if function_name == "compare_dw_abudhabi_years":
+            result = compare_dw_abudhabi_years(
+                arguments["year_a"],
+                arguments["year_b"]
+            )
+
+            explanation = (
+                f"Here is the Dynamic World comparison for Abu Dhabi "
+                f"between {result['year_a']} and {result['year_b']}."
+            )
+
+            return {
+                "message": explanation,
+                "data": result
+            }
+
+    # If no tool call, just return model text
+    return {
+        "message": message.content,
+        "data": None
     }
