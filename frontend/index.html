@@ -3,6 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <title>GEE Chatbot – Abu Dhabi Dynamic World</title>
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -14,7 +21,7 @@
     }
     .chat-container {
       width: 100%;
-      max-width: 800px;
+      max-width: 900px;
       background: #ffffff;
       margin: 20px;
       padding: 20px;
@@ -38,6 +45,7 @@
       padding: 8px 10px;
       border-radius: 6px;
       max-width: 90%;
+      white-space: pre-wrap;
     }
     .msg.user {
       background: #d0ebff;
@@ -77,20 +85,43 @@
       background: #999;
       cursor: default;
     }
+    #map {
+      width: 100%;
+      height: 350px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+    .map-label {
+      font-size: 14px;
+      margin-top: 5px;
+      color: #555;
+    }
   </style>
 </head>
 <body>
   <div class="chat-container">
     <h2>GEE Chatbot – Abu Dhabi Dynamic World</h2>
     <div class="messages" id="messages"></div>
+
+    <div class="map-label">Interactive map (switches to latest result):</div>
+    <div id="map"></div>
+
     <div class="input-row">
-      <input id="user-input" type="text" placeholder="Ask something like: Compare land cover between 2020 and 2024 in Abu Dhabi" />
+      <input
+        id="user-input"
+        type="text"
+        placeholder="Ask: Compare land cover between 2020 and 2024 in Abu Dhabi"
+      />
       <button id="send-btn">Send</button>
     </div>
   </div>
 
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <script>
-    // 🔴 IMPORTANT: replace this with your Render URL (no trailing slash)
+    // Same-origin: this will call /chat on the same host
     const BACKEND_URL = "";
 
     const messagesDiv = document.getElementById("messages");
@@ -102,7 +133,6 @@
       div.className = "msg " + sender;
       div.textContent = text;
 
-      // If there are images, add them below the text
       images.forEach(url => {
         if (!url) return;
         const img = document.createElement("img");
@@ -115,11 +145,25 @@
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
+    // -------- Leaflet map setup --------
+    const map = L.map("map").setView([24.45, 54.42], 11); // Abu Dhabi approx
+    let currentLayer = null;
+
+    function showTileLayer(tileUrlTemplate) {
+      if (!tileUrlTemplate) return;
+      if (currentLayer) {
+        map.removeLayer(currentLayer);
+      }
+      currentLayer = L.tileLayer(tileUrlTemplate, {
+        maxZoom: 18,
+      }).addTo(map);
+    }
+
+    // -------- Chat logic --------
     async function sendMessage() {
       const text = input.value.trim();
       if (!text) return;
 
-      // Show user message
       addMessage(text, "user");
       input.value = "";
       sendBtn.disabled = true;
@@ -140,21 +184,28 @@
 
         const data = await res.json();
 
-        // Remove the "Thinking..." message (last child)
+        // Remove "Thinking..." message
         messagesDiv.removeChild(messagesDiv.lastChild);
 
         const botText = data.message || "No message from server.";
         const imgs = [];
 
         if (data.data) {
+          // Static PNG images
           if (data.data.dw_a_url) imgs.push(data.data.dw_a_url);
           if (data.data.dw_b_url) imgs.push(data.data.dw_b_url);
           if (data.data.change_url) imgs.push(data.data.change_url);
-          // you can also show s2_a_url, s2_b_url if you want
+
+          // Interactive map tiles (we'll show change layer if available, else dw_a)
+          const tileTemplate =
+            data.data.change_tiles ||
+            data.data.dw_a_tiles ||
+            data.data.dw_b_tiles;
+
+          showTileLayer(tileTemplate);
         }
 
         addMessage(botText, "bot", imgs);
-
       } catch (err) {
         console.error(err);
         messagesDiv.removeChild(messagesDiv.lastChild);
