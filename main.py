@@ -1,6 +1,7 @@
 # main.py
 import os
 import json
+from typing import Optional
 
 import ee
 from fastapi import FastAPI
@@ -65,7 +66,11 @@ init_earth_engine()
 # -------- OpenAI client --------
 
 # On Render, set OPENAI_API_KEY in Environment Variables
-client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+if OPENAI_API_KEY:
+    client = OpenAI(api_key=OPENAI_API_KEY)
+else:
+    client = None  # allow requests that don't use OpenAI
 
 
 # -------- Pydantic models --------
@@ -73,10 +78,15 @@ client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 class CompareRequest(BaseModel):
     year_a: int
     year_b: int
+    location: Optional[str] = None  # optional bbox string or name
 
 
 class ChatRequest(BaseModel):
-    message: str
+    message: Optional[str] = None
+    location: Optional[str] = None
+    year_a: Optional[int] = None
+    year_b: Optional[int] = None
+    analysis_function: Optional[str] = None
 
 
 # -------- Endpoints --------
@@ -88,10 +98,25 @@ def root():
 
 @app.post("/compare_abudhabi_dw")
 def compare_abudhabi_dw(req: CompareRequest):
-    data = compare_dw_abudhabi_years(req.year_a, req.year_b)
+    """
+    Simple compare endpoint (explicit). location may be:
+      - None -> use default Abu Dhabi AOI
+      - "minLon,minLat,maxLon,maxLat" -> will use that bbox
+    """
+    roi_bounds = None
+    if req.location:
+        # try parse bbox
+        try:
+            parts = [p.strip() for p in req.location.split(",")]
+            if len(parts) == 4:
+                roi_bounds = [float(x) for x in parts]
+        except Exception:
+            roi_bounds = None
+
+    data = compare_dw_abudhabi_years(req.year_a, req.year_b, roi_bounds=roi_bounds)
     text = (
-        f"Here is the Dynamic World comparison for Abu Dhabi between "
-        f"{data['year_a']} and {data['year_b']}."
+        f"Here is the Dynamic World comparison for the requested area "
+        f"between {data['year_a']} and {data['year_b']}."
     )
     return {
         "message": text,
@@ -101,15 +126,48 @@ def compare_abudhabi_dw(req: CompareRequest):
 
 @app.post("/chat")
 def chat(req: ChatRequest):
-    user_message = req.message
+    """
+    Chat endpoint that supports two flows:
+      1) If year_a and year_b are present (or analysis_function), run compare_dw_abudhabi_years directly.
+      2) Otherwise, forward the free-text message to OpenAI and optionally handle function calls.
+    """
 
-    # Tools definition for function calling
+    # If UI supplied years (Run button), call the comparison directly
+    if req.year_a is not None and req.year_b is not None:
+        # parse location bounding box if provided in the simple bbox format
+        roi_bounds = None
+        if req.location:
+            try:
+                parts = [p.strip() for p in req.location.split(",")]
+                if len(parts) == 4:
+                    roi_bounds = [float(x) for x in parts]
+            except Exception:
+                roi_bounds = None
+
+        data = compare_dw_abudhabi_years(req.year_a, req.year_b, roi_bounds=roi_bounds)
+        explanation = (
+            f"Here is the Dynamic World comparison for the requested area "
+            f"between {data['year_a']} and {data['year_b']}."
+        )
+        return {"message": explanation, "data": data}
+
+    # If no years are supplied — fall back to chat / OpenAI behavior
+    user_message = req.message or ""
+    if not client:
+        # OpenAI API not configured — return a helpful error
+        return {
+            "message": "OpenAI client is not configured on the server. "
+                       "Provide OPENAI_API_KEY to enable conversational responses.",
+            "data": None,
+        }
+
+    # Tools definition for function calling (optional)
     tools = [
         {
             "type": "function",
             "function": {
                 "name": "compare_dw_abudhabi_years",
-                "description": "Compare Dynamic World land cover between two years for Abu Dhabi city block.",
+                "description": "Compare Dynamic World land cover between two years for a specified area.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -120,6 +178,11 @@ def chat(req: ChatRequest):
                         "year_b": {
                             "type": "integer",
                             "description": "Second year between 2020 and 2024"
+                        },
+                        "roi_bounds": {
+                            "type": "array",
+                            "items": {"type": "number"},
+                            "description": "Optional bounding box [minLon, minLat, maxLon, maxLat]"
                         }
                     },
                     "required": ["year_a", "year_b"]
@@ -148,12 +211,13 @@ def chat(req: ChatRequest):
         if fn_name == "compare_dw_abudhabi_years":
             year_a = args["year_a"]
             year_b = args["year_b"]
+            roi_bounds = args.get("roi_bounds")
 
-            data = compare_dw_abudhabi_years(year_a, year_b)
+            data = compare_dw_abudhabi_years(year_a, year_b, roi_bounds=roi_bounds)
 
             explanation = (
-                f"Here is the Dynamic World comparison for Abu Dhabi between "
-                f"{data['year_a']} and {data['year_b']}."
+                f"Here is the Dynamic World comparison for the requested area "
+                f"between {data['year_a']} and {data['year_b']}."
             )
 
             return {
@@ -163,6 +227,6 @@ def chat(req: ChatRequest):
 
     # If no tool call, just return the model text answer
     return {
-        "message": message.content,
+        "message": message.content if hasattr(message, "content") else str(message),
         "data": None,
     }
