@@ -35,7 +35,7 @@
       gap: 20px;
     }
 
-    /* LEFT SIDE – chat + legend */
+    /* LEFT SIDE – controls + chat + legend */
     .left-panel {
       width: 380px;
       max-width: 420px;
@@ -58,9 +58,60 @@
     .subtitle {
       font-size: 12px;
       color: #6b7280;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
+    /* Controls section */
+    .controls {
+      background: #f9fafb;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      padding: 10px 10px 8px;
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+
+    .controls-title {
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .controls-row label {
+      font-size: 11px;
+      color: #6b7280;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .controls-row .field {
+      flex: 1;
+    }
+
+    select,
+    .controls input[type="text"] {
+      width: 100%;
+      padding: 5px 7px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      font-size: 12px;
+      outline: none;
+      background: #ffffff;
+    }
+
+    select:focus,
+    .controls input[type="text"]:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.2);
+    }
+
+    /* Chat + legend */
     .messages {
       flex: 1;
       overflow-y: auto;
@@ -68,7 +119,7 @@
       border-radius: 12px;
       background: #f9fafb;
       border: 1px solid #e5e7eb;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .msg {
@@ -101,8 +152,8 @@
     }
 
     .legend-container {
-      margin-top: 4px;
-      padding-top: 8px;
+      margin-top: 2px;
+      padding-top: 6px;
       border-top: 1px solid #e5e7eb;
       font-size: 13px;
     }
@@ -128,13 +179,13 @@
       border: 1px solid #d1d5db;
     }
 
-    .swatch-water { background: #4a90e2; }
-    .swatch-trees { background: #1b7837; }
-    .swatch-grass { background: #7fbf7b; }
+    .swatch-water   { background: #4a90e2; }
+    .swatch-trees   { background: #1b7837; }
+    .swatch-grass   { background: #7fbf7b; }
     .swatch-flooded { background: #8073ac; }
-    .swatch-crops { background: #fdae61; }
-    .swatch-built { background: #d73027; }
-    .swatch-bare { background: #b8a27a; }
+    .swatch-crops   { background: #fdae61; }
+    .swatch-built   { background: #d73027; }
+    .swatch-bare    { background: #b8a27a; }
 
     .legend-label {
       color: #4b5563;
@@ -143,7 +194,7 @@
     .input-row {
       display: flex;
       gap: 8px;
-      margin-top: 10px;
+      margin-top: 8px;
     }
 
     #user-input {
@@ -195,13 +246,15 @@
       padding: 16px;
       box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
       min-width: 0;
+      position: relative;
     }
 
     .right-header {
       display: flex;
       justify-content: space-between;
-      align-items: baseline;
+      align-items: center;
       margin-bottom: 8px;
+      gap: 10px;
     }
 
     .right-title {
@@ -223,6 +276,30 @@
       overflow: hidden;
     }
 
+    /* Map mode toggle */
+    .map-toggle {
+      font-size: 12px;
+      background: #f9fafb;
+      border-radius: 999px;
+      padding: 4px 8px;
+      border: 1px solid #e5e7eb;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .map-toggle label {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      color: #374151;
+    }
+
+    .map-toggle input {
+      cursor: pointer;
+    }
+
     /* Responsive: stack panels on small screens */
     @media (max-width: 900px) {
       .app-container {
@@ -238,13 +315,71 @@
 </head>
 <body>
   <div class="app-container">
-    <!-- LEFT: Chat + Legend -->
+    <!-- LEFT: Controls + Chat + Legend -->
     <div class="left-panel">
       <h2>GEE Chatbot</h2>
       <div class="subtitle">Abu Dhabi – Dynamic World land cover</div>
 
+      <!-- Analysis controls -->
+      <div class="controls">
+        <div class="controls-title">Analysis settings</div>
+
+        <div class="controls-row">
+          <div class="field">
+            <label for="year-a">Year A</label>
+            <select id="year-a">
+              <option value="2016">2016</option>
+              <option value="2017">2017</option>
+              <option value="2018">2018</option>
+              <option value="2019">2019</option>
+              <option value="2020" selected>2020</option>
+              <option value="2021">2021</option>
+              <option value="2022">2022</option>
+              <option value="2023">2023</option>
+              <option value="2024">2024</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="year-b">Year B</label>
+            <select id="year-b">
+              <option value="2016">2016</option>
+              <option value="2017">2017</option>
+              <option value="2018">2018</option>
+              <option value="2019">2019</option>
+              <option value="2020">2020</option>
+              <option value="2021">2021</option>
+              <option value="2022">2022</option>
+              <option value="2023">2023</option>
+              <option value="2024" selected>2024</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="controls-row">
+          <div class="field">
+            <label for="function-select">Function</label>
+            <select id="function-select">
+              <option value="change_detection" selected>Change detection</option>
+              <option value="single_year">Single year map</option>
+              <option value="timeseries">Time-series summary</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="location-input">Location</label>
+            <input
+              id="location-input"
+              type="text"
+              placeholder="e.g. Abu Dhabi"
+              value="Abu Dhabi"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat messages -->
       <div class="messages" id="messages"></div>
 
+      <!-- Legend -->
       <div class="legend-container">
         <div class="legend-title">Legend (DW classes shown):</div>
         <div class="legend-grid">
@@ -271,11 +406,12 @@
         </div>
       </div>
 
+      <!-- Chat input -->
       <div class="input-row">
         <input
           id="user-input"
           type="text"
-          placeholder="Ask: Compare land cover between 2020 and 2024 in Abu Dhabi"
+          placeholder="Ask: Compare land cover between 2020 and 2024"
         />
         <button id="send-btn">Send</button>
       </div>
@@ -284,8 +420,20 @@
     <!-- RIGHT: Interactive map -->
     <div class="right-panel">
       <div class="right-header">
-        <div class="right-title">Interactive map</div>
-        <div class="right-caption">View switches to the latest result</div>
+        <div>
+          <div class="right-title">Interactive map</div>
+          <div class="right-caption">View switches to the latest result</div>
+        </div>
+        <div class="map-toggle">
+          <label>
+            <input type="radio" name="map-mode" value="satellite" checked />
+            Satellite
+          </label>
+          <label>
+            <input type="radio" name="map-mode" value="dw" />
+            Dynamic World
+          </label>
+        </div>
       </div>
       <div id="map"></div>
     </div>
@@ -301,6 +449,11 @@
     const messagesDiv = document.getElementById("messages");
     const input = document.getElementById("user-input");
     const sendBtn = document.getElementById("send-btn");
+
+    const yearASelect = document.getElementById("year-a");
+    const yearBSelect = document.getElementById("year-b");
+    const functionSelect = document.getElementById("function-select");
+    const locationInput = document.getElementById("location-input");
 
     function addMessage(text, sender = "bot", images = []) {
       const div = document.createElement("div");
@@ -321,27 +474,84 @@
 
     // -------- Leaflet map setup --------
     const map = L.map("map").setView([24.45, 54.42], 11); // Abu Dhabi approx
-    let currentLayer = null;
 
-    function showTileLayer(tileUrlTemplate) {
-      if (!tileUrlTemplate) return;
-      if (currentLayer) {
-        map.removeLayer(currentLayer);
+    // Base satellite layer (original imagery)
+    const satelliteLayer = L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      {
+        maxZoom: 19,
+        attribution:
+          "Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
       }
-      currentLayer = L.tileLayer(tileUrlTemplate, {
+    ).addTo(map);
+
+    // Dynamic World layer (from backend tiles)
+    let dwLayer = null;
+
+    function showDwLayer(tileUrlTemplate) {
+      if (!tileUrlTemplate) return;
+
+      if (dwLayer) {
+        map.removeLayer(dwLayer);
+      }
+
+      dwLayer = L.tileLayer(tileUrlTemplate, {
         maxZoom: 18,
-      }).addTo(map);
+      });
+
+      // Only add if DW mode is selected
+      const dwRadio = document.querySelector(
+        'input[name="map-mode"][value="dw"]'
+      );
+      if (dwRadio && dwRadio.checked) {
+        dwLayer.addTo(map);
+      }
     }
+
+    // Map mode toggle logic
+    document
+      .querySelectorAll('input[name="map-mode"]')
+      .forEach((inputEl) => {
+        inputEl.addEventListener("change", (e) => {
+          const value = e.target.value;
+          if (value === "satellite") {
+            if (dwLayer && map.hasLayer(dwLayer)) {
+              map.removeLayer(dwLayer);
+            }
+          } else if (value === "dw") {
+            if (dwLayer && !map.hasLayer(dwLayer)) {
+              dwLayer.addTo(map);
+            }
+          }
+        });
+      });
 
     // -------- Chat logic --------
     async function sendMessage() {
-      const text = input.value.trim();
-      if (!text) return;
+      const userText = input.value.trim();
+      const locationVal = locationInput.value.trim() || "Abu Dhabi";
+      const yearA = yearASelect.value;
+      const yearB = yearBSelect.value;
+      const func = functionSelect.value;
 
-      addMessage(text, "user");
+      if (!userText && !locationVal) return;
+
+      // Show only the user's plain question in the chat
+      addMessage(
+        userText || `Run ${func} for ${locationVal} (${yearA}–${yearB})`,
+        "user"
+      );
       input.value = "";
       sendBtn.disabled = true;
       addMessage("Thinking...", "bot");
+
+      // Build a richer message for the backend with the UI variables
+      const payloadMessage =
+        `Location: ${locationVal}\n` +
+        `Year A: ${yearA}\n` +
+        `Year B: ${yearB}\n` +
+        `Function: ${func}\n` +
+        `User question: ${userText || "Run the selected analysis."}`;
 
       try {
         const res = await fetch(BACKEND_URL + "/chat", {
@@ -349,7 +559,7 @@
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ message: text }),
+          body: JSON.stringify({ message: payloadMessage }),
         });
 
         if (!res.ok) {
@@ -370,13 +580,13 @@
           if (data.data.dw_b_url) imgs.push(data.data.dw_b_url);
           if (data.data.change_url) imgs.push(data.data.change_url);
 
-          // Interactive map tiles (we'll show change layer if available, else dw_a)
+          // Interactive map tiles (DW layer)
           const tileTemplate =
             data.data.change_tiles ||
             data.data.dw_a_tiles ||
             data.data.dw_b_tiles;
 
-          showTileLayer(tileTemplate);
+          showDwLayer(tileTemplate);
         }
 
         addMessage(botText, "bot", imgs);
