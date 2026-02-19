@@ -11,7 +11,7 @@ CLASS_PALETTE = [
 ]
 CHANGE_COLOR = "ff00ff"  # magenta
 
-# Default Abu Dhabi AOI: rectangle bounds (no EE calls yet)
+# Default Abu Dhabi AOI: rectangle bounds (lon/lat)
 DEFAULT_RECT_BOUNDS = [54.16, 24.29, 54.74, 24.61]
 
 
@@ -21,7 +21,6 @@ def get_aoi(bounds=None):
     bounds: [minLon, minLat, maxLon, maxLat] OR None to use default Abu Dhabi.
     """
     if bounds:
-        # ensure we have floats
         try:
             b = [float(x) for x in bounds]
             if len(b) != 4:
@@ -29,7 +28,6 @@ def get_aoi(bounds=None):
             return ee.Geometry.Rectangle(b, None, False)
         except Exception as e:
             raise ValueError(f"Invalid bounds provided: {e}")
-    # fallback to default
     return ee.Geometry.Rectangle(DEFAULT_RECT_BOUNDS, None, False)
 
 
@@ -87,7 +85,6 @@ def get_tile_template(image, vis_params, roi=None):
     Get an interactive tile URL template for Leaflet, like:
     https://earthengine.googleapis.com/map/XYZ/{z}/{x}/{y}?token=ABC
     """
-    # visualize first so colors are correct
     vis_image = image.visualize(**vis_params)
     m = vis_image.getMapId({})
     tile_url = m["tile_fetcher"].url_format
@@ -98,43 +95,35 @@ def compare_dw_abudhabi_years(year_a: int, year_b: int, roi_bounds: list = None)
     """
     Main function.
     Accepts optional roi_bounds = [minLon, minLat, maxLon, maxLat]
-    Returns:
-      - PNG URLs (thumbs)
-      - Tile URL templates (for interactive map)
+    Returns dict with PNG thumbs and tile templates.
     """
 
     year_a = int(year_a)
     year_b = int(year_b)
 
-    # Ensure order and valid range
     if year_a > year_b:
         year_a, year_b = year_b, year_a
 
     if year_a not in YEARS or year_b not in YEARS:
         raise ValueError(f"Years must be between {YEARS[0]} and {YEARS[-1]}.")
 
-    # Determine ROI
     if roi_bounds:
         roi = get_aoi(roi_bounds)
     else:
-        roi = get_aoi()  # default Abu Dhabi
+        roi = get_aoi()
 
-    # Build images
     dw_a_raw = yearly_dw_label(year_a, roi)
     dw_b_raw = yearly_dw_label(year_b, roi)
     s2_a_raw = yearly_s2_rgb(year_a, roi)
     s2_b_raw = yearly_s2_rgb(year_b, roi)
     change_raw = make_change_image(year_a, year_b, roi)
 
-    # Visualization params
     dw_vis = {"min": 0, "max": 8, "palette": CLASS_PALETTE}
-    # For S2 we already visualized in yearly_s2_rgb
-    # Visual images for PNG thumbnails
+
     dw_a_vis = dw_a_raw.visualize(**dw_vis)
     dw_b_vis = dw_b_raw.visualize(**dw_vis)
     change_vis = change_raw.visualize(palette=[CHANGE_COLOR])
 
-    # PNG thumbnail URLs (simple images)
     thumb_params = {
         "region": roi,
         "dimensions": 768,
@@ -147,7 +136,6 @@ def compare_dw_abudhabi_years(year_a: int, year_b: int, roi_bounds: list = None)
     s2_b_url = s2_b_raw.getThumbURL(thumb_params)
     change_url = change_vis.getThumbURL(thumb_params)
 
-    # Tile URL templates (interactive map)
     dw_a_tiles = get_tile_template(dw_a_raw, dw_vis, roi)
     dw_b_tiles = get_tile_template(dw_b_raw, dw_vis, roi)
     change_tiles = get_tile_template(change_raw, {"palette": [CHANGE_COLOR]}, roi)
@@ -155,13 +143,11 @@ def compare_dw_abudhabi_years(year_a: int, year_b: int, roi_bounds: list = None)
     result = {
         "year_a": year_a,
         "year_b": year_b,
-        # PNGs
         "dw_a_url": dw_a_url,
         "dw_b_url": dw_b_url,
         "s2_a_url": s2_a_url,
         "s2_b_url": s2_b_url,
         "change_url": change_url,
-        # Tiles
         "dw_a_tiles": dw_a_tiles,
         "dw_b_tiles": dw_b_tiles,
         "change_tiles": change_tiles,
