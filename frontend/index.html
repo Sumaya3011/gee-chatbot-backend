@@ -174,36 +174,6 @@
       margin-top: 5px;
     }
 
-    .legend-container {
-      margin-top: 2px;
-      padding-top: 6px;
-      border-top: 1px solid #e5e7eb;
-      font-size: 13px;
-    }
-
-    .legend-grid {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      row-gap: 6px;
-      column-gap: 8px;
-      align-items: center;
-    }
-
-    .legend-swatch {
-      width: 16px;
-      height: 16px;
-      border-radius: 4px;
-      border: 1px solid #d1d5db;
-    }
-
-    .swatch-water   { background: #4a90e2; }
-    .swatch-trees   { background: #1b7837; }
-    .swatch-grass   { background: #7fbf7b; }
-    .swatch-flooded { background: #8073ac; }
-    .swatch-crops   { background: #fdae61; }
-    .swatch-built   { background: #d73027; }
-    .swatch-bare    { background: #b8a27a; }
-
     .input-row {
       display: flex;
       gap: 8px;
@@ -285,7 +255,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       gap: 10px;
     }
 
@@ -300,13 +270,60 @@
       color: #6b7280;
     }
 
+    .map-legend-wrapper {
+      flex: 1;
+      display: flex;
+      gap: 12px;
+      min-height: 340px;
+    }
+
     #map {
       flex: 1;
-      min-height: 340px;
       border-radius: 16px;
       border: 1px solid #e5e7eb;
       overflow: hidden;
     }
+
+    .legend-panel {
+      width: 220px;
+      max-width: 230px;
+      background: #f9fafb;
+      border-radius: 14px;
+      border: 1px solid #e5e7eb;
+      padding: 10px 10px 8px;
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+    }
+
+    .legend-title {
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 6px;
+    }
+
+    .legend-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      row-gap: 6px;
+      column-gap: 8px;
+      align-items: center;
+    }
+
+    .legend-swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      border: 1px solid #d1d5db;
+    }
+
+    .swatch-water   { background: #4a90e2; }
+    .swatch-trees   { background: #1b7837; }
+    .swatch-grass   { background: #7fbf7b; }
+    .swatch-flooded { background: #8073ac; }
+    .swatch-crops   { background: #fdae61; }
+    .swatch-built   { background: #d73027; }
+    .swatch-bare    { background: #b8a27a; }
 
     .layer-toggle {
       font-size: 11px;
@@ -357,6 +374,14 @@
       }
       .left-panel {
         width: 100%;
+      }
+      .map-legend-wrapper {
+        flex-direction: column;
+      }
+      .legend-panel {
+        width: 100%;
+        max-width: none;
+        order: -1; /* legend above map on small screens */
       }
     }
   </style>
@@ -411,23 +436,11 @@
             </select>
           </div>
           <div style="flex:1">
-            <label for="location-name-input">Location name</label>
-            <input
-              id="location-name-input"
-              type="text"
-              placeholder="e.g. Abu Dhabi Corniche"
-              value="Abu Dhabi"
-            />
-          </div>
-        </div>
-
-        <div class="controls-row">
-          <div style="flex:1">
-            <label for="location-input">Location bounds</label>
+            <label for="location-input">Location bounds (optional)</label>
             <input
               id="location-input"
               type="text"
-              placeholder="minLon,minLat,maxLon,maxLat  OR lat,lon  OR leave empty"
+              placeholder="minLon,minLat,maxLon,maxLat  OR lat,lon"
             />
           </div>
         </div>
@@ -437,27 +450,13 @@
             Use map view
           </button>
           <div class="hint">
-            Bounds are optional. Name is used for labels/text.
+            Leave empty to use the default Abu Dhabi AOI.
           </div>
         </div>
       </div>
 
       <!-- Messages -->
       <div class="messages" id="messages"></div>
-
-      <!-- Legend -->
-      <div class="legend-container">
-        <div style="font-weight:600;margin-bottom:6px">Legend (Dynamic World classes)</div>
-        <div class="legend-grid">
-          <div class="legend-swatch swatch-water"></div><div>0 – Water</div>
-          <div class="legend-swatch swatch-trees"></div><div>1 – Trees</div>
-          <div class="legend-swatch swatch-grass"></div><div>2 – Grass</div>
-          <div class="legend-swatch swatch-flooded"></div><div>3 – Flooded veg</div>
-          <div class="legend-swatch swatch-crops"></div><div>4 – Crops</div>
-          <div class="legend-swatch swatch-built"></div><div>6 – Built</div>
-          <div class="legend-swatch swatch-bare"></div><div>7 – Bare ground</div>
-        </div>
-      </div>
 
       <!-- Chat input -->
       <div class="input-row">
@@ -502,14 +501,30 @@
           </label>
         </div>
       </div>
-      <div id="map"></div>
+
+      <div class="map-legend-wrapper">
+        <div id="map"></div>
+
+        <div class="legend-panel">
+          <div class="legend-title">Dynamic World classes</div>
+          <div class="legend-grid">
+            <div class="legend-swatch swatch-water"></div><div>0 – Water</div>
+            <div class="legend-swatch swatch-trees"></div><div>1 – Trees</div>
+            <div class="legend-swatch swatch-grass"></div><div>2 – Grass</div>
+            <div class="legend-swatch swatch-flooded"></div><div>3 – Flooded veg</div>
+            <div class="legend-swatch swatch-crops"></div><div>4 – Crops</div>
+            <div class="legend-swatch swatch-built"></div><div>6 – Built</div>
+            <div class="legend-swatch swatch-bare"></div><div>7 – Bare ground</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    // Backend origin ("" means same origin)
+    // Backend origin ("" = same origin)
     const BACKEND_URL = "";
 
     // DOM elements
@@ -520,13 +535,11 @@
     const yearBSelect = document.getElementById("year-b");
     const functionSelect = document.getElementById("function-select");
     const locationBoundsInput = document.getElementById("location-input");
-    const locationNameInput = document.getElementById("location-name-input");
     const useMapBtn = document.getElementById("use-map");
     const mapLocationLabel = document.getElementById("map-location-label");
     const layerToggle = document.getElementById("layer-toggle");
 
     let lastRequestedBBox = null;
-    let lastLocationName = "Abu Dhabi";
 
     function addMessage(text, sender = "bot", images = []) {
       const div = document.createElement("div");
@@ -554,11 +567,7 @@
     ).addTo(map);
 
     let dwLayer = null;
-    const dwTiles = {
-      a: null,
-      b: null,
-      change: null,
-    };
+    const dwTiles = { a: null, b: null, change: null };
 
     function ensureDwLayer(initialUrl) {
       if (!dwLayer) {
@@ -570,7 +579,7 @@
     }
 
     function setMapLayer(mode) {
-      // Update active chip styling
+      // update chip styles
       document
         .querySelectorAll(".layer-chip")
         .forEach((chip) => chip.classList.remove("active"));
@@ -589,7 +598,6 @@
         return;
       }
 
-      // For DW layers, always keep satellite on as base
       if (!map.hasLayer(satelliteLayer)) {
         satelliteLayer.addTo(map);
       }
@@ -600,7 +608,6 @@
       if (mode === "dw_change") url = dwTiles.change;
 
       if (!url) {
-        // No tiles for this mode yet
         if (dwLayer && map.hasLayer(dwLayer)) {
           map.removeLayer(dwLayer);
         }
@@ -621,7 +628,7 @@
       }
     });
 
-    // Use map view -> write bbox into location bounds input
+    // Use map view -> write bbox into bounds input
     useMapBtn.addEventListener("click", () => {
       const b = map.getBounds();
       const sw = b.getSouthWest();
@@ -634,7 +641,7 @@
       addMessage(`Location bounds set from map view: ${bboxStr}`, "bot");
     });
 
-    // Client-side parsing to remember bbox for fitBounds
+    // Client-side parse for bbox so we can fit the map
     function parseLocationStringClient(str) {
       if (!str) return null;
       const parts = str.split(",").map((s) => s.trim()).filter((s) => s.length > 0);
@@ -666,20 +673,16 @@
     async function runAnalysis() {
       const userText = input.value.trim();
       const locationBoundsVal = locationBoundsInput.value.trim();
-      const locationNameVal = locationNameInput.value.trim() || "Selected area";
       const yearA = parseInt(yearASelect.value);
       const yearB = parseInt(yearBSelect.value);
       const func = functionSelect.value;
 
-      lastLocationName = locationNameVal;
-
       const payload = {
         message: userText || "",
         location: locationBoundsVal || "",
-        location_name: locationNameVal,
         year_a: yearA,
         year_b: yearB,
-        analysis_function: func,
+        analysis_function: func
       };
 
       const parsed = parseLocationStringClient(locationBoundsVal);
@@ -688,7 +691,7 @@
       }
 
       const displayLocation =
-        locationNameVal || locationBoundsVal || "default area";
+        locationBoundsVal || "default Abu Dhabi AOI";
 
       addMessage(
         userText ||
@@ -724,7 +727,7 @@
           dwTiles.b = data.data.dw_b_tiles || null;
           dwTiles.change = data.data.change_tiles || null;
 
-          // default to change layer if available, else year A
+          // default layer: change if exists, else year A, else satellite
           let defaultMode = "satellite";
           if (dwTiles.change) defaultMode = "dw_change";
           else if (dwTiles.a) defaultMode = "dw_a";
@@ -737,8 +740,8 @@
             setMapLayer(defaultMode);
           }
 
-          // Update map label
-          mapLocationLabel.textContent = `${locationNameVal} · ${data.data.year_a}–${data.data.year_b}`;
+          // update map label only with years
+          mapLocationLabel.textContent = `Dynamic World · ${data.data.year_a}–${data.data.year_b}`;
         }
 
         addMessage(botText, "bot", imgs);
