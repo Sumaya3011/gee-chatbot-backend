@@ -11,13 +11,26 @@ CLASS_PALETTE = [
 ]
 CHANGE_COLOR = "ff00ff"  # magenta
 
-# Abu Dhabi AOI: rectangle bounds (no EE calls yet)
-RECT_BOUNDS = [54.16, 24.29, 54.74, 24.61]
+# Default Abu Dhabi AOI: rectangle bounds (no EE calls yet)
+DEFAULT_RECT_BOUNDS = [54.16, 24.29, 54.74, 24.61]
 
 
-def get_aoi():
-    """Return the Abu Dhabi AOI as an EE geometry."""
-    return ee.Geometry.Rectangle(RECT_BOUNDS, None, False)
+def get_aoi(bounds=None):
+    """
+    Return an EE geometry rectangle for the given bounds.
+    bounds: [minLon, minLat, maxLon, maxLat] OR None to use default Abu Dhabi.
+    """
+    if bounds:
+        # ensure we have floats
+        try:
+            b = [float(x) for x in bounds]
+            if len(b) != 4:
+                raise ValueError("bounds must be list-like of 4 floats")
+            return ee.Geometry.Rectangle(b, None, False)
+        except Exception as e:
+            raise ValueError(f"Invalid bounds provided: {e}")
+    # fallback to default
+    return ee.Geometry.Rectangle(DEFAULT_RECT_BOUNDS, None, False)
 
 
 def yearly_dw_label(year, roi=None):
@@ -81,9 +94,10 @@ def get_tile_template(image, vis_params, roi=None):
     return tile_url
 
 
-def compare_dw_abudhabi_years(year_a: int, year_b: int):
+def compare_dw_abudhabi_years(year_a: int, year_b: int, roi_bounds: list = None):
     """
     Main function.
+    Accepts optional roi_bounds = [minLon, minLat, maxLon, maxLat]
     Returns:
       - PNG URLs (thumbs)
       - Tile URL templates (for interactive map)
@@ -99,7 +113,11 @@ def compare_dw_abudhabi_years(year_a: int, year_b: int):
     if year_a not in YEARS or year_b not in YEARS:
         raise ValueError(f"Years must be between {YEARS[0]} and {YEARS[-1]}.")
 
-    roi = get_aoi()
+    # Determine ROI
+    if roi_bounds:
+        roi = get_aoi(roi_bounds)
+    else:
+        roi = get_aoi()  # default Abu Dhabi
 
     # Build images
     dw_a_raw = yearly_dw_label(year_a, roi)
@@ -110,9 +128,7 @@ def compare_dw_abudhabi_years(year_a: int, year_b: int):
 
     # Visualization params
     dw_vis = {"min": 0, "max": 8, "palette": CLASS_PALETTE}
-    s2_vis = {"bands": ["vis-red", "vis-green", "vis-blue"], "min": 0, "max": 3000}
-    # For S2 we already visualized in yearly_s2_rgb, so we just use blank vis_params
-
+    # For S2 we already visualized in yearly_s2_rgb
     # Visual images for PNG thumbnails
     dw_a_vis = dw_a_raw.visualize(**dw_vis)
     dw_b_vis = dw_b_raw.visualize(**dw_vis)
