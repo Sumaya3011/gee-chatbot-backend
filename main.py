@@ -16,7 +16,6 @@ from gee_functions import compare_dw_abudhabi_years
 # -------- FastAPI app --------
 app = FastAPI()
 
-# Allow browser calls from anywhere (simpler for now)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,29 +24,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve frontend folder at /app
-app.mount(
-    "/app",
-    StaticFiles(directory="frontend", html=True),
-    name="frontend",
-)
+# serve frontend folder at /app
+app.mount("/app", StaticFiles(directory="frontend", html=True), name="frontend")
 
 # -------- Earth Engine initialization --------
-
 SCOPES = [
     "https://www.googleapis.com/auth/earthengine",
     "https://www.googleapis.com/auth/devstorage.read_write",
 ]
 
-# If running on Render, use env var; locally, use a key file
-KEY_FILE = "gee-backend-key.json"  # for local dev ONLY (do NOT commit this file)
-
+KEY_FILE = "gee-backend-key.json"  # local dev only; do NOT commit
 
 def init_earth_engine():
     if "GEE_SERVICE_ACCOUNT_JSON" in os.environ:
         service_account_info = json.loads(os.environ["GEE_SERVICE_ACCOUNT_JSON"])
     else:
-        # local testing with file; this file is ignored by .gitignore
         with open(KEY_FILE) as f:
             service_account_info = json.load(f)
 
@@ -55,31 +46,23 @@ def init_earth_engine():
         service_account_info,
         scopes=SCOPES,
     )
-
-    # change project if your GEE project is named differently
     ee.Initialize(credentials, project="gee-chatbot1")
 
-
-# Initialize EE on startup
+# initialize EE
 init_earth_engine()
 
-# -------- OpenAI client --------
-
-# On Render, set OPENAI_API_KEY in Environment Variables
+# -------- OpenAI client (optional) --------
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 if OPENAI_API_KEY:
     client = OpenAI(api_key=OPENAI_API_KEY)
 else:
-    client = None  # allow requests that don't use OpenAI
-
+    client = None
 
 # -------- Pydantic models --------
-
 class CompareRequest(BaseModel):
     year_a: int
     year_b: int
-    location: Optional[str] = None  # optional bbox string or name
-
+    location: Optional[str] = None
 
 class ChatRequest(BaseModel):
     message: Optional[str] = None
@@ -88,101 +71,82 @@ class ChatRequest(BaseModel):
     year_b: Optional[int] = None
     analysis_function: Optional[str] = None
 
+# -------- helpers --------
+def parse_location_to_bbox(location_str):
+    """
+    Accepts:
+      - "minLon,minLat,maxLon,maxLat" -> returns [minLon,minLat,maxLon,maxLat]
+      - "lat,lon" or "lon,lat" -> returns small bbox around center
+      - otherwise -> returns None (server will use default AOI)
+    """
+    if not location_str:
+        return None
+    parts = [p.strip() for p in location_str.split(",") if p.strip() != ""]
+    try:
+        if len(parts) == 4:
+            nums = [float(x) for x in parts]
+            return nums
+        if len(parts) == 2:
+            a = float(parts[0]); b = float(parts[1])
+            # detect lat,lon by range
+            if -90 <= a <= 90 and -180 <= b <= 180:
+                lat = a; lon = b
+            else:
+                lon = a; lat = b
+            delta = 0.05
+            return [lon - delta, lat - delta, lon + delta, lat + delta]
+    except Exception:
+        return None
+    return None
 
-# -------- Endpoints --------
-
+# -------- endpoints --------
 @app.get("/")
 def root():
     return {"status": "ok", "message": "GEE chatbot backend running"}
 
-
 @app.post("/compare_abudhabi_dw")
 def compare_abudhabi_dw(req: CompareRequest):
-    """
-    Simple compare endpoint (explicit). location may be:
-      - None -> use default Abu Dhabi AOI
-      - "minLon,minLat,maxLon,maxLat" -> will use that bbox
-    """
     roi_bounds = None
     if req.location:
-        # try parse bbox
-        try:
-            parts = [p.strip() for p in req.location.split(",")]
-            if len(parts) == 4:
-                roi_bounds = [float(x) for x in parts]
-        except Exception:
-            roi_bounds = None
-
+        roi_bounds = parse_location_to_bbox(req.location)
     data = compare_dw_abudhabi_years(req.year_a, req.year_b, roi_bounds=roi_bounds)
-    text = (
-        f"Here is the Dynamic World comparison for the requested area "
-        f"between {data['year_a']} and {data['year_b']}."
-    )
-    return {
-        "message": text,
-        "data": data,
-    }
-
+    text = f"Dynamic World comparison between {data['year_a']} and {data['year_b']}."
+    return {"message": text, "data": data}
 
 @app.post("/chat")
 def chat(req: ChatRequest):
-    """
-    Chat endpoint that supports two flows:
-      1) If year_a and year_b are present (or analysis_function), run compare_dw_abudhabi_years directly.
-      2) Otherwise, forward the free-text message to OpenAI and optionally handle function calls.
-    """
-
-    # If UI supplied years (Run button), call the comparison directly
+    # If UI supplied years, run comparison directly (no OpenAI needed)
     if req.year_a is not None and req.year_b is not None:
-        # parse location bounding box if provided in the simple bbox format
         roi_bounds = None
         if req.location:
-            try:
-                parts = [p.strip() for p in req.location.split(",")]
-                if len(parts) == 4:
-                    roi_bounds = [float(x) for x in parts]
-            except Exception:
-                roi_bounds = None
-
+            roi_bounds = parse_location_to_bbox(req.location)
         data = compare_dw_abudhabi_years(req.year_a, req.year_b, roi_bounds=roi_bounds)
-        explanation = (
-            f"Here is the Dynamic World comparison for the requested area "
-            f"between {data['year_a']} and {data['year_b']}."
-        )
+        explanation = f"Dynamic World comparison between {data['year_a']} and {data['year_b']}."
         return {"message": explanation, "data": data}
 
-    # If no years are supplied — fall back to chat / OpenAI behavior
+    # Otherwise fallback to chat via OpenAI (if configured)
     user_message = req.message or ""
     if not client:
-        # OpenAI API not configured — return a helpful error
         return {
-            "message": "OpenAI client is not configured on the server. "
-                       "Provide OPENAI_API_KEY to enable conversational responses.",
+            "message": "OpenAI not configured. Provide OPENAI_API_KEY to enable chat.",
             "data": None,
         }
 
-    # Tools definition for function calling (optional)
+    # Tools for function calling (optional)
     tools = [
         {
             "type": "function",
             "function": {
                 "name": "compare_dw_abudhabi_years",
-                "description": "Compare Dynamic World land cover between two years for a specified area.",
+                "description": "Compare Dynamic World between two years for a specified bounding box.",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "year_a": {
-                            "type": "integer",
-                            "description": "First year between 2020 and 2024"
-                        },
-                        "year_b": {
-                            "type": "integer",
-                            "description": "Second year between 2020 and 2024"
-                        },
+                        "year_a": {"type": "integer"},
+                        "year_b": {"type": "integer"},
                         "roi_bounds": {
                             "type": "array",
                             "items": {"type": "number"},
-                            "description": "Optional bounding box [minLon, minLat, maxLon, maxLat]"
                         }
                     },
                     "required": ["year_a", "year_b"]
@@ -202,7 +166,6 @@ def chat(req: ChatRequest):
 
     message = completion.choices[0].message
 
-    # If the model decides to call a function/tool
     if message.tool_calls:
         tool_call = message.tool_calls[0]
         fn_name = tool_call.function.name
@@ -212,21 +175,8 @@ def chat(req: ChatRequest):
             year_a = args["year_a"]
             year_b = args["year_b"]
             roi_bounds = args.get("roi_bounds")
-
             data = compare_dw_abudhabi_years(year_a, year_b, roi_bounds=roi_bounds)
+            explanation = f"Dynamic World comparison between {data['year_a']} and {data['year_b']}."
+            return {"message": explanation, "data": data}
 
-            explanation = (
-                f"Here is the Dynamic World comparison for the requested area "
-                f"between {data['year_a']} and {data['year_b']}."
-            )
-
-            return {
-                "message": explanation,
-                "data": data,
-            }
-
-    # If no tool call, just return the model text answer
-    return {
-        "message": message.content if hasattr(message, "content") else str(message),
-        "data": None,
-    }
+    return {"message": message.content if hasattr(message, "content") else str(message), "data": None}
