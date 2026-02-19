@@ -1,362 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
   <title>GEE Chatbot – Abu Dhabi Dynamic World</title>
 
-  <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-        sans-serif;
-      background: linear-gradient(135deg, #f3f4f6, #e5f2ff);
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: stretch;
-    }
-
-    .app-container {
-      width: 100%;
-      max-width: 1200px;
-      height: 100vh;
-      padding: 20px;
-      display: flex;
-      gap: 20px;
-    }
-
-    /* LEFT SIDE – controls + chat + legend */
-    .left-panel {
-      width: 380px;
-      max-width: 420px;
-      min-width: 320px;
-      display: flex;
-      flex-direction: column;
-      background: #ffffff;
-      border-radius: 16px;
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
-      padding: 18px 18px 14px;
-    }
-
-    .left-panel h2 {
-      margin: 0 0 4px;
-      font-size: 20px;
-      font-weight: 700;
-      color: #111827;
-    }
-
-    .subtitle {
-      font-size: 12px;
-      color: #6b7280;
-      margin-bottom: 10px;
-    }
-
-    /* Controls section */
-    .controls {
-      background: #f9fafb;
-      border-radius: 12px;
-      border: 1px solid #e5e7eb;
-      padding: 10px 10px 8px;
-      margin-bottom: 10px;
-      font-size: 12px;
-    }
-
-    .controls-title {
-      font-weight: 600;
-      color: #374151;
-      margin-bottom: 6px;
-    }
-
-    .controls-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
-
-    .controls-row label {
-      font-size: 11px;
-      color: #6b7280;
-      display: block;
-      margin-bottom: 2px;
-    }
-
-    .controls-row .field {
-      flex: 1;
-    }
-
-    select,
-    .controls input[type="text"] {
-      width: 100%;
-      padding: 5px 7px;
-      border-radius: 8px;
-      border: 1px solid #d1d5db;
-      font-size: 12px;
-      outline: none;
-      background: #ffffff;
-    }
-
-    select:focus,
-    .controls input[type="text"]:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.2);
-    }
-
-    /* Chat + legend */
-    .messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px;
-      border-radius: 12px;
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      margin-bottom: 8px;
-    }
-
-    .msg {
-      margin-bottom: 10px;
-      padding: 8px 10px;
-      border-radius: 10px;
-      max-width: 90%;
-      white-space: pre-wrap;
-      font-size: 13px;
-      line-height: 1.4;
-      display: inline-block;
-    }
-
-    .msg.user {
-      background: #dbeafe;
-      align-self: flex-end;
-      margin-left: auto;
-    }
-
-    .msg.bot {
-      background: #f3f4f6;
-      align-self: flex-start;
-      margin-right: auto;
-    }
-
-    .msg img {
-      max-width: 100%;
-      border-radius: 6px;
-      margin-top: 5px;
-    }
-
-    .legend-container {
-      margin-top: 2px;
-      padding-top: 6px;
-      border-top: 1px solid #e5e7eb;
-      font-size: 13px;
-    }
-
-    .legend-title {
-      font-weight: 600;
-      color: #374151;
-      margin-bottom: 6px;
-    }
-
-    .legend-grid {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      row-gap: 6px;
-      column-gap: 8px;
-      align-items: center;
-    }
-
-    .legend-swatch {
-      width: 16px;
-      height: 16px;
-      border-radius: 3px;
-      border: 1px solid #d1d5db;
-    }
-
-    .swatch-water   { background: #4a90e2; }
-    .swatch-trees   { background: #1b7837; }
-    .swatch-grass   { background: #7fbf7b; }
-    .swatch-flooded { background: #8073ac; }
-    .swatch-crops   { background: #fdae61; }
-    .swatch-built   { background: #d73027; }
-    .swatch-bare    { background: #b8a27a; }
-
-    .legend-label {
-      color: #4b5563;
-    }
-
-    .input-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-    }
-
-    #user-input {
-      flex: 1;
-      padding: 8px 10px;
-      font-size: 14px;
-      border-radius: 999px;
-      border: 1px solid #d1d5db;
-      outline: none;
-      transition: border-color 0.15s, box-shadow 0.15s;
-    }
-
-    #user-input:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
-    }
-
-    button {
-      padding: 8px 16px;
-      font-size: 14px;
-      border-radius: 999px;
-      border: none;
-      background: #2563eb;
-      color: white;
-      cursor: pointer;
-      font-weight: 500;
-      white-space: nowrap;
-      transition: background 0.15s, transform 0.05s;
-    }
-
-    button:hover:not(:disabled) {
-      background: #1d4ed8;
-      transform: translateY(-1px);
-    }
-
-    button:disabled {
-      background: #9ca3af;
-      cursor: default;
-      transform: none;
-    }
-
-    /* RIGHT SIDE – map */
-    .right-panel {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      background: #ffffff;
-      border-radius: 16px;
-      padding: 16px;
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
-      min-width: 0;
-      position: relative;
-    }
-
-    .right-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-      gap: 10px;
-    }
-
-    .right-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: #111827;
-    }
-
-    .right-caption {
-      font-size: 12px;
-      color: #6b7280;
-    }
-
-    #map {
-      flex: 1;
-      min-height: 340px;
-      border-radius: 14px;
-      border: 1px solid #e5e7eb;
-      overflow: hidden;
-    }
-
-    /* Map mode toggle */
-    .map-toggle {
-      font-size: 12px;
-      background: #f9fafb;
-      border-radius: 999px;
-      padding: 4px 8px;
-      border: 1px solid #e5e7eb;
-      display: inline-flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .map-toggle label {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      cursor: pointer;
-      color: #374151;
-    }
-
-    .map-toggle input {
-      cursor: pointer;
-    }
-
-    /* Responsive: stack panels on small screens */
-    @media (max-width: 900px) {
-      .app-container {
-        flex-direction: column;
-        height: auto;
-      }
-      .left-panel {
-        width: 100%;
-        max-width: none;
-      }
-    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;background:linear-gradient(135deg,#f3f4f6,#e5f2ff);height:100vh;display:flex;justify-content:center;align-items:stretch}
+    .app-container{width:100%;max-width:1200px;height:100vh;padding:20px;display:flex;gap:20px}
+    .left-panel{width:380px;display:flex;flex-direction:column;background:#fff;border-radius:16px;box-shadow:0 12px 30px rgba(15,23,42,0.12);padding:18px}
+    h2{margin:0 0 4px;font-size:20px}
+    .subtitle{font-size:12px;color:#6b7280;margin-bottom:10px}
+    .controls{background:#f9fafb;border-radius:12px;border:1px solid #e5e7eb;padding:10px;margin-bottom:10px;font-size:12px}
+    .controls-row{display:flex;gap:8px;margin-bottom:6px}
+    label{font-size:11px;color:#6b7280;display:block;margin-bottom:4px}
+    select,input[type="text"]{width:100%;padding:6px 8px;border-radius:8px;border:1px solid #d1d5db;font-size:12px}
+    .messages{flex:1;overflow-y:auto;padding:10px;border-radius:12px;background:#f9fafb;border:1px solid #e5e7eb;margin-bottom:8px}
+    .msg{margin-bottom:10px;padding:8px 10px;border-radius:10px;max-width:90%;white-space:pre-wrap;display:inline-block}
+    .msg.user{background:#dbeafe;margin-left:auto}
+    .msg.bot{background:#f3f4f6;margin-right:auto}
+    .legend-container{margin-top:2px;padding-top:6px;border-top:1px solid #e5e7eb;font-size:13px}
+    .legend-grid{display:grid;grid-template-columns:auto 1fr;row-gap:6px;column-gap:8px;align-items:center}
+    .legend-swatch{width:16px;height:16px;border-radius:3px;border:1px solid #d1d5db}
+    .swatch-water{background:#4a90e2}.swatch-trees{background:#1b7837}.swatch-grass{background:#7fbf7b}.swatch-flooded{background:#8073ac}.swatch-crops{background:#fdae61}.swatch-built{background:#d73027}.swatch-bare{background:#b8a27a}
+    .input-row{display:flex;gap:8px;margin-top:8px}
+    #user-input{flex:1;padding:8px 10px;border-radius:999px;border:1px solid #d1d5db}
+    button{padding:8px 12px;border-radius:999px;border:none;background:#2563eb;color:#fff;cursor:pointer}
+    .right-panel{flex:1;display:flex;flex-direction:column;background:#fff;border-radius:16px;padding:16px;box-shadow:0 12px 30px rgba(15,23,42,0.12);min-width:0;position:relative}
+    .right-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px}
+    #map{flex:1;min-height:340px;border-radius:14px;border:1px solid #e5e7eb;overflow:hidden}
+    .map-toggle{font-size:12px;background:#f9fafb;border-radius:999px;padding:4px 8px;border:1px solid #e5e7eb;display:inline-flex;gap:8px;align-items:center}
+    .small{font-size:12px;padding:6px 8px;border-radius:10px;background:#fff;border:1px solid #e5e7eb;cursor:pointer}
+    .controls-footer{display:flex;gap:8px;align-items:center;margin-top:6px}
+    .hint{font-size:11px;color:#6b7280}
+    @media (max-width:900px){.app-container{flex-direction:column;height:auto}.left-panel{width:100%}}
   </style>
 </head>
 <body>
   <div class="app-container">
-    <!-- LEFT: Controls + Chat + Legend -->
     <div class="left-panel">
       <h2>GEE Chatbot</h2>
-      <div class="subtitle">Abu Dhabi – Dynamic World land cover</div>
+      <div class="subtitle">Dynamic World land cover</div>
 
-      <!-- Analysis controls -->
       <div class="controls">
-        <div class="controls-title">Analysis settings</div>
+        <div style="font-weight:600;margin-bottom:6px">Analysis settings</div>
 
         <div class="controls-row">
-          <div class="field">
+          <div style="flex:1">
             <label for="year-a">Year A</label>
             <select id="year-a">
-              <option value="2016">2016</option>
-              <option value="2017">2017</option>
-              <option value="2018">2018</option>
-              <option value="2019">2019</option>
-              <option value="2020" selected>2020</option>
-              <option value="2021">2021</option>
-              <option value="2022">2022</option>
-              <option value="2023">2023</option>
-              <option value="2024">2024</option>
+              <option>2020</option><option>2021</option><option>2022</option><option>2023</option><option selected>2024</option>
             </select>
           </div>
-          <div class="field">
+          <div style="flex:1">
             <label for="year-b">Year B</label>
             <select id="year-b">
-              <option value="2016">2016</option>
-              <option value="2017">2017</option>
-              <option value="2018">2018</option>
-              <option value="2019">2019</option>
-              <option value="2020">2020</option>
-              <option value="2021">2021</option>
-              <option value="2022">2022</option>
-              <option value="2023">2023</option>
-              <option value="2024" selected>2024</option>
+              <option selected>2020</option><option>2021</option><option>2022</option><option>2023</option><option>2024</option>
             </select>
           </div>
         </div>
 
         <div class="controls-row">
-          <div class="field">
+          <div style="flex:1">
             <label for="function-select">Function</label>
             <select id="function-select">
               <option value="change_detection" selected>Change detection</option>
@@ -364,238 +71,230 @@
               <option value="timeseries">Time-series summary</option>
             </select>
           </div>
-          <div class="field">
+          <div style="flex:1">
             <label for="location-input">Location</label>
-            <input
-              id="location-input"
-              type="text"
-              placeholder="e.g. Abu Dhabi"
-              value="Abu Dhabi"
-            />
+            <input id="location-input" type="text" placeholder="minLon,minLat,maxLon,maxLat  OR lat,lon OR place name" value="Abu Dhabi" />
           </div>
         </div>
-      </div>
 
-      <!-- Chat messages -->
-      <div class="messages" id="messages"></div>
-
-      <!-- Legend -->
-      <div class="legend-container">
-        <div class="legend-title">Legend (DW classes shown):</div>
-        <div class="legend-grid">
-          <div class="legend-swatch swatch-water"></div>
-          <div class="legend-label">0 – Water</div>
-
-          <div class="legend-swatch swatch-trees"></div>
-          <div class="legend-label">1 – Trees</div>
-
-          <div class="legend-swatch swatch-grass"></div>
-          <div class="legend-label">2 – Grass</div>
-
-          <div class="legend-swatch swatch-flooded"></div>
-          <div class="legend-label">3 – Flooded veg</div>
-
-          <div class="legend-swatch swatch-crops"></div>
-          <div class="legend-label">4 – Crops</div>
-
-          <div class="legend-swatch swatch-built"></div>
-          <div class="legend-label">6 – Built</div>
-
-          <div class="legend-swatch swatch-bare"></div>
-          <div class="legend-label">7 – Bare</div>
+        <div class="controls-footer">
+          <button id="use-map" class="small" title="Use the current map viewport as the location">Use map view</button>
+          <div class="hint">Formats: bbox (4 numbers) or center (lat,lon) or name</div>
         </div>
       </div>
 
-      <!-- Chat input -->
-      <div class="input-row">
-        <input
-          id="user-input"
-          type="text"
-          placeholder="Optional: describe your question"
-        />
+      <div class="messages" id="messages"></div>
+
+      <div class="legend-container">
+        <div style="font-weight:600;margin-bottom:6px">Legend (DW classes shown):</div>
+        <div class="legend-grid">
+          <div class="legend-swatch swatch-water"></div><div>0 – Water</div>
+          <div class="legend-swatch swatch-trees"></div><div>1 – Trees</div>
+          <div class="legend-swatch swatch-grass"></div><div>2 – Grass</div>
+          <div class="legend-swatch swatch-flooded"></div><div>3 – Flooded veg</div>
+          <div class="legend-swatch swatch-crops"></div><div>4 – Crops</div>
+          <div class="legend-swatch swatch-built"></div><div>6 – Built</div>
+          <div class="legend-swatch swatch-bare"></div><div>7 – Bare</div>
+        </div>
+      </div>
+
+      <div class="input-row" style="margin-top:8px">
+        <input id="user-input" type="text" placeholder="Optional: describe your question" />
         <button id="send-btn">Run</button>
       </div>
     </div>
 
-    <!-- RIGHT: Interactive map -->
     <div class="right-panel">
       <div class="right-header">
         <div>
-          <div class="right-title">Interactive map</div>
-          <div class="right-caption">Switch between Satellite and DW</div>
+          <div style="font-weight:600">Interactive map</div>
+          <div style="font-size:12px;color:#6b7280">Switch between Satellite and DW</div>
         </div>
-        <div class="map-toggle">
-          <label>
-            <input type="radio" name="map-mode" value="satellite" checked />
-            Satellite
-          </label>
-          <label>
-            <input type="radio" name="map-mode" value="dw" />
-            Dynamic World
-          </label>
+        <div class="map-toggle" style="gap:6px">
+          <label style="cursor:pointer"><input type="radio" name="map-mode" value="satellite" checked /> Satellite</label>
+          <label style="cursor:pointer"><input type="radio" name="map-mode" value="dw" /> Dynamic World</label>
         </div>
       </div>
       <div id="map"></div>
     </div>
   </div>
 
-  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    // Same-origin: this will call /chat on the same host
     const BACKEND_URL = "";
 
+    // UI elements
     const messagesDiv = document.getElementById("messages");
     const input = document.getElementById("user-input");
     const sendBtn = document.getElementById("send-btn");
-
     const yearASelect = document.getElementById("year-a");
     const yearBSelect = document.getElementById("year-b");
     const functionSelect = document.getElementById("function-select");
     const locationInput = document.getElementById("location-input");
+    const useMapBtn = document.getElementById("use-map");
 
-    function addMessage(text, sender = "bot", images = []) {
+    // track last requested bbox (so we can fit the map after tiles load)
+    let lastRequestedBBox = null;
+
+    function addMessage(text, sender="bot", images=[]) {
       const div = document.createElement("div");
       div.className = "msg " + sender;
       div.textContent = text;
-
-      images.forEach((url) => {
-        if (!url) return;
+      images.forEach(url=>{
+        if(!url) return;
         const img = document.createElement("img");
         img.src = url;
         div.appendChild(document.createElement("br"));
         div.appendChild(img);
       });
-
       messagesDiv.appendChild(div);
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
-    // -------- Leaflet map setup --------
-    const map = L.map("map").setView([24.45, 54.42], 11); // Abu Dhabi approx
+    // Leaflet map
+    const map = L.map("map").setView([24.45, 54.42], 11);
 
-    // Base satellite layer (original imagery)
     const satelliteLayer = L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      {
-        maxZoom: 19,
-        attribution:
-          "Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
-      }
+      { maxZoom: 19 }
     ).addTo(map);
 
-    // Dynamic World layer (from backend tiles)
     let dwLayer = null;
-
-    function showDwLayer(tileUrlTemplate) {
-      if (!tileUrlTemplate) return;
-
-      if (dwLayer) {
-        map.removeLayer(dwLayer);
-      }
-
-      dwLayer = L.tileLayer(tileUrlTemplate, {
-        maxZoom: 18,
-      });
-
-      // Only add if DW mode is selected
-      const dwRadio = document.querySelector(
-        'input[name="map-mode"][value="dw"]'
-      );
-      if (dwRadio && dwRadio.checked) {
-        dwLayer.addTo(map);
-      }
+    function setDwTiles(template) {
+      if (!template) return;
+      if (dwLayer) map.removeLayer(dwLayer);
+      dwLayer = L.tileLayer(template, { maxZoom: 18 });
+      const mode = document.querySelector('input[name="map-mode"]:checked').value;
+      if (mode === "dw") dwLayer.addTo(map);
     }
 
-    // Map mode toggle logic
-    document
-      .querySelectorAll('input[name="map-mode"]')
-      .forEach((inputEl) => {
-        inputEl.addEventListener("change", (e) => {
-          const value = e.target.value;
-          if (value === "satellite") {
-            if (dwLayer && map.hasLayer(dwLayer)) {
-              map.removeLayer(dwLayer);
-            }
-          } else if (value === "dw") {
-            if (dwLayer && !map.hasLayer(dwLayer)) {
-              dwLayer.addTo(map);
-            }
-          }
-        });
+    // Map mode toggle
+    document.querySelectorAll('input[name="map-mode"]').forEach(e=>{
+      e.addEventListener("change", evt=>{
+        const val = evt.target.value;
+        if (val === "satellite") {
+          if (dwLayer && map.hasLayer(dwLayer)) map.removeLayer(dwLayer);
+        } else {
+          if (dwLayer && !map.hasLayer(dwLayer)) map.addLayer(dwLayer);
+        }
       });
+    });
 
-    // -------- Chat / Analysis logic --------
+    // Use map view -> write bbox into location input as "minLon,minLat,maxLon,maxLat"
+    useMapBtn.addEventListener("click", ()=>{
+      const b = map.getBounds();
+      const sw = b.getSouthWest();
+      const ne = b.getNorthEast();
+      const bboxStr = `${sw.lng.toFixed(6)},${sw.lat.toFixed(6)},${ne.lng.toFixed(6)},${ne.lat.toFixed(6)}`;
+      locationInput.value = bboxStr;
+      // store lastRequestedBBox so we use it when fitting after tiles
+      lastRequestedBBox = [sw.lng, sw.lat, ne.lng, ne.lat];
+      addMessage(`Location set from map view: ${bboxStr}`, "bot");
+    });
+
+    // Helper: parse location string on client side
+    // Returns { roi_bounds: [minLon,minLat,maxLon,maxLat] } or null to use default/place-name
+    function parseLocationStringClient(str) {
+      if (!str) return null;
+      const parts = str.split(",").map(s=>s.trim()).filter(s=>s.length>0);
+      if (parts.length === 4) {
+        // try parse bbox
+        const nums = parts.map(Number);
+        if (nums.every(n=>!Number.isNaN(n))) {
+          return { roi_bounds: nums };
+        }
+      } else if (parts.length === 2) {
+        // center coords, expand by a small delta (0.05 deg ~ ~5km, depends on lat)
+        const lat = Number(parts[0]), lon = Number(parts[1]);
+        if (!Number.isNaN(lat) && !Number.isNaN(lon)) {
+          const delta = 0.05;
+          const bbox = [lon - delta, lat - delta, lon + delta, lat + delta];
+          return { roi_bounds: bbox };
+        }
+      }
+      // else treat as place-name -> let server decide (fallback to default AOI)
+      return null;
+    }
+
+    // Run analysis (called by Run button or Enter)
     async function runAnalysis() {
-      const userText = input.value.trim();       // can be empty
-      const locationVal = locationInput.value.trim() || "Abu Dhabi";
-      const yearA = yearASelect.value;
-      const yearB = yearBSelect.value;
+      const userText = input.value.trim();
+      const locationVal = locationInput.value.trim();
+      const yearA = parseInt(yearASelect.value);
+      const yearB = parseInt(yearBSelect.value);
       const func = functionSelect.value;
 
-      // If everything is empty (very unlikely), do nothing
-      if (!userText && !locationVal && !yearA && !yearB && !func) return;
+      // Build payload with separate fields
+      const payload = {
+        message: userText || "",
+        location: locationVal || "",       // server will parse
+        year_a: yearA,
+        year_b: yearB,
+        analysis_function: func
+      };
 
-      // What we show in the chat as "user message"
-      const displayText =
-        userText ||
-        `Run "${func}" for ${locationVal} (${yearA} → ${yearB})`;
+      // If client can parse a bbox immediately, keep it for fitting later
+      const parsed = parseLocationStringClient(locationVal);
+      if (parsed && parsed.roi_bounds) {
+        lastRequestedBBox = parsed.roi_bounds;
+      } else {
+        // do not overwrite lastRequestedBBox if null
+      }
 
-      addMessage(displayText, "user");
+      addMessage(userText || `Run ${func} for ${locationVal || "default area"} (${yearA}→${yearB})`, "user");
       input.value = "";
       sendBtn.disabled = true;
       addMessage("Thinking...", "bot");
 
-      // What we send to backend – real variables
-      const payload = {
-        message: userText,          // free-text question (can be "")
-        location: locationVal,      // <<< location variable
-        year_a: yearA,
-        year_b: yearB,
-        analysis_function: func,
-      };
-
       try {
         const res = await fetch(BACKEND_URL + "/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
+          method:"POST",
+          headers: { "Content-Type":"application/json" },
+          body: JSON.stringify(payload)
         });
-
-        if (!res.ok) {
-          throw new Error("HTTP error " + res.status);
-        }
-
+        if (!res.ok) throw new Error("HTTP " + res.status);
         const data = await res.json();
 
-        // Remove "Thinking..." message
+        // remove Thinking...
         messagesDiv.removeChild(messagesDiv.lastChild);
 
         const botText = data.message || "No message from server.";
         const imgs = [];
 
+        // If data contains tiles, prefer change->dw_a->dw_b
         if (data.data) {
-          // Static PNG images
           if (data.data.dw_a_url) imgs.push(data.data.dw_a_url);
           if (data.data.dw_b_url) imgs.push(data.data.dw_b_url);
           if (data.data.change_url) imgs.push(data.data.change_url);
 
-          // Interactive map tiles (DW layer)
-          const tileTemplate =
-            data.data.change_tiles ||
-            data.data.dw_a_tiles ||
-            data.data.dw_b_tiles;
-
-          showDwLayer(tileTemplate);
+          const tileTemplate = data.data.change_tiles || data.data.dw_a_tiles || data.data.dw_b_tiles;
+          // set DW tiles (does not automatically add to map unless DW mode is on)
+          setDwTiles(tileTemplate);
         }
 
         addMessage(botText, "bot", imgs);
+
+        // If we have a lastRequestedBBox (client parsed or from Use map view), fit the map bounds
+        if (lastRequestedBBox && lastRequestedBBox.length === 4) {
+          const sw = [lastRequestedBBox[1], lastRequestedBBox[0]]; // lat,lng
+          const ne = [lastRequestedBBox[3], lastRequestedBBox[2]];
+          try {
+            map.fitBounds([sw, ne], { padding: [20,20] });
+            // If the map mode is "dw" and dwLayer already exists, ensure it's visible
+            const mode = document.querySelector('input[name="map-mode"]:checked').value;
+            if (mode === "dw" && dwLayer && !map.hasLayer(dwLayer)) map.addLayer(dwLayer);
+          } catch(e){
+            console.warn("fitBounds failed", e);
+          }
+        }
+
       } catch (err) {
         console.error(err);
-        messagesDiv.removeChild(messagesDiv.lastChild);
+        // remove Thinking... safely
+        if (messagesDiv.lastChild && messagesDiv.lastChild.textContent === "Thinking...") {
+          messagesDiv.removeChild(messagesDiv.lastChild);
+        }
         addMessage("Error: " + err.message, "bot");
       } finally {
         sendBtn.disabled = false;
@@ -603,11 +302,7 @@
     }
 
     sendBtn.addEventListener("click", runAnalysis);
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        runAnalysis();
-      }
-    });
+    input.addEventListener("keydown", (e)=>{ if (e.key === "Enter") runAnalysis(); });
   </script>
 </body>
 </html>
