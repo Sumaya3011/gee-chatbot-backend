@@ -1,25 +1,17 @@
-# gee_functions.py
 import ee
 
-# Years we support
 YEARS = [2020, 2021, 2022, 2023, 2024]
 
-# Dynamic World palette (same as your JS)
 CLASS_PALETTE = [
     "419bdf", "397d49", "88b053", "7a87c6", "e49635",
     "dfc35a", "c4281b", "a59b8f", "b39fe1"
 ]
-CHANGE_COLOR = "ff00ff"  # magenta
+CHANGE_COLOR = "ff00ff"
 
-# Default Abu Dhabi AOI: rectangle bounds (lon/lat)
 DEFAULT_RECT_BOUNDS = [54.16, 24.29, 54.74, 24.61]
 
 
 def get_aoi(bounds=None):
-    """
-    Return an EE geometry rectangle for the given bounds.
-    bounds: [minLon, minLat, maxLon, maxLat] OR None to use default Abu Dhabi.
-    """
     if bounds:
         try:
             b = [float(x) for x in bounds]
@@ -32,7 +24,6 @@ def get_aoi(bounds=None):
 
 
 def yearly_dw_label(year, roi=None):
-    """Dynamic World label image for one year."""
     if roi is None:
         roi = get_aoi()
 
@@ -52,7 +43,6 @@ def yearly_dw_label(year, roi=None):
 
 
 def yearly_s2_rgb(year, roi=None):
-    """Sentinel-2 RGB visual image for one year."""
     if roi is None:
         roi = get_aoi()
 
@@ -70,7 +60,6 @@ def yearly_s2_rgb(year, roi=None):
 
 
 def make_change_image(year_a, year_b, roi=None):
-    """Raw change mask (before visualize)."""
     if roi is None:
         roi = get_aoi()
 
@@ -81,10 +70,6 @@ def make_change_image(year_a, year_b, roi=None):
 
 
 def get_tile_template(image, vis_params, roi=None):
-    """
-    Get an interactive tile URL template for Leaflet, like:
-    https://earthengine.googleapis.com/map/XYZ/{z}/{x}/{y}?token=ABC
-    """
     vis_image = image.visualize(**vis_params)
     m = vis_image.getMapId({})
     tile_url = m["tile_fetcher"].url_format
@@ -92,12 +77,6 @@ def get_tile_template(image, vis_params, roi=None):
 
 
 def compare_dw_abudhabi_years(year_a: int, year_b: int, roi_bounds: list = None):
-    """
-    Main function.
-    Accepts optional roi_bounds = [minLon, minLat, maxLon, maxLat]
-    Returns dict with PNG thumbs and tile templates.
-    """
-
     year_a = int(year_a)
     year_b = int(year_b)
 
